@@ -1,87 +1,132 @@
 import 'package:flutter/material.dart';
 import 'package:jitsi_meet_flutter_sdk/jitsi_meet_flutter_sdk.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class JitsiMeetPage extends StatefulWidget {
-  const JitsiMeetPage({super.key});
+  final String roomName;
+  final String? serverUrl;
+  final String? userDisplayName;
+  final String? userEmail;
+
+  const JitsiMeetPage({
+    Key? key,
+    required this.roomName,
+    this.serverUrl = "https://meet.jit.si",
+    this.userDisplayName,
+    this.userEmail,
+  }) : super(key: key);
 
   @override
   _JitsiMeetPageState createState() => _JitsiMeetPageState();
 }
 
 class _JitsiMeetPageState extends State<JitsiMeetPage> {
-  final SupabaseClient _supabase = Supabase.instance.client;
   final JitsiMeet _jitsiMeet = JitsiMeet();
+  bool _isMeetingJoined = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _joinMeeting();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _joinMeeting();
+    });
   }
 
   Future<void> _joinMeeting() async {
+    if (_isMeetingJoined || _isLoading) return;
+
+    setState(() => _isLoading = true);
+
     try {
-      // Получаем данные канала из Supabase
-      final response = await _supabase
-          .from('channel')
-          .select('id, meeting_url, organizer_id')
-          .order('id', ascending: false)
-          .limit(1)
-          .single();
+      final user = JitsiMeetUserInfo(
+        displayName: widget.userDisplayName,
+        email: widget.userEmail,
+      );
 
-      if (response != null && response['meeting_url'] != null) {
-        String meetingUrl = response['meeting_url'] as String;
-        int channelId = response['id'] as int;
+      final options = JitsiMeetConferenceOptions(
+        room: widget.roomName,
+        serverURL: widget.serverUrl,
+        userInfo: user,
+        configOverrides: {
+          "startWithAudioMuted": false,
+          "startWithVideoMuted": false,
+          "subject": "Video Call",
+        },
+        featureFlags: {
+          "unsafe-room-warning.enabled": false,
+          "welcomepage.enabled": false,
+          "toolbox.alwaysVisible": false,
+        },
+      );
 
-        if (meetingUrl.isNotEmpty) {
-          // Приводим organizer_id к String? (может быть null)
-          String? organizerId = response['organizer_id'] as String?;
+      await Future.delayed(const Duration(seconds: 1)); // Задержка перед запуском
 
-          // Если организатор не назначен, присваиваем текущего пользователя как организатора
-          if (organizerId == null) {
-            final user = await Supabase.instance.client.auth.currentUser;
-            if (user != null) {
-              // Обновляем поле organizer_id в таблице channel
-              await _supabase.from('channel').update({
-                'organizer_id': user.id, // Назначаем организатора
-              }).eq('id', channelId);
+      await _jitsiMeet.join(options);
 
-              // Назначаем пользователя организатором
-              organizerId = user.id;
-            }
-          }
+      setState(() {
+        _isMeetingJoined = true;
+        _isLoading = false;
+      });
+    } catch (error) {
+      _onConferenceError(error.toString());
+    }
+  }
 
-          // Теперь проверим роль текущего пользователя, чтобы указать, что он организатор
-          final currentUser = await Supabase.instance.client.auth.currentUser;
-          bool isOrganizer = currentUser?.id == organizerId;
+  void _endMeeting() {
+    if (_isMeetingJoined) {
+      setState(() {
+        _isMeetingJoined = false;
+      });
+      Navigator.pop(context);
+    }
+  }
 
-          // Создаем объект с настройками конференции
-          var options = JitsiMeetConferenceOptions(
-            room: meetingUrl, // Название комнаты (meeting_url)
-            configOverrides: {
-              "startWithAudioMuted": false, // Звук включен
-              "startWithVideoMuted": false, // Видео включено
-              "subject": "Видеозвонок",
-              "prejoinPageEnabled": false, // Убираем экран предварительных настроек!
-              "disableInviteFunctions": true, // Отключаем возможность приглашений
-              "isOrganizer": isOrganizer, // Указываем, что это организатор
-            },
-          );
-
-          // Подключаемся к звонку
-          await _jitsiMeet.join(options);
-        }
-      }
-    } catch (e) {
-      debugPrint('Ошибка при подключении к встрече: $e');
+  void _onConferenceError(dynamic error) {
+    if (mounted) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Ошибка: ${error.toString()}")),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Видеозвонок"),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: _endMeeting,
+        ),
+      ),
       body: Center(
-        child: CircularProgressIndicator(),
+        child: _isLoading
+            ? const CircularProgressIndicator()
+            : Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (!_isMeetingJoined)
+              ElevatedButton(
+                onPressed: _joinMeeting,
+                child: const Text("Присоединиться к звонку"),
+              ),
+            if (_isMeetingJoined)
+              Column(
+                children: [
+                  const Text(
+                    "Идет видеозвонок...",
+                    style: TextStyle(fontSize: 18),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: _endMeeting,
+                    child: const Text("Завершить звонок"),
+                  ),
+                ],
+              ),
+          ],
+        ),
       ),
     );
   }

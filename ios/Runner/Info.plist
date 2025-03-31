@@ -2,6 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSCameraUsageDescription</key>
+    <string>Доступ к камере нужен для видеозвонков</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Доступ к микрофону нужен для аудиозвонков</string>
+    <key>NSAllowsArbitraryLoads</key>
+    <true/>
+    <key>io.flutter.embedded_views_preview</key>
+    <true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

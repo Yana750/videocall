@@ -1,0 +1,78 @@
+PODS:
+  - app_links (0.0.2):
+    - Flutter
+  - Flutter (1.0.0)
+  - Giphy (2.2.12):
+    - libwebp
+  - jitsi_meet_flutter_sdk (10.3.0):
+    - Flutter
+    - JitsiMeetSDK (= 10.3.0)
+  - JitsiMeetSDK (10.3.0):
+    - Giphy (= 2.2.12)
+    - JitsiWebRTC (~> 124.0)
+  - JitsiWebRTC (124.0.2)
+  - libwebp (1.5.0):
+    - libwebp/demux (= 1.5.0)
+    - libwebp/mux (= 1.5.0)
+    - libwebp/sharpyuv (= 1.5.0)
+    - libwebp/webp (= 1.5.0)
+  - libwebp/demux (1.5.0):
+    - libwebp/webp
+  - libwebp/mux (1.5.0):
+    - libwebp/demux
+  - libwebp/sharpyuv (1.5.0)
+  - libwebp/webp (1.5.0):
+    - libwebp/sharpyuv
+  - path_provider_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
+  - shared_preferences_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
+  - url_launcher_ios (0.0.1):
+    - Flutter
+
+DEPENDENCIES:
+  - app_links (from `.symlinks/plugins/app_links/ios`)
+  - Flutter (from `Flutter`)
+  - jitsi_meet_flutter_sdk (from `.symlinks/plugins/jitsi_meet_flutter_sdk/ios`)
+  - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
+  - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
+  - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
+
+SPEC REPOS:
+  trunk:
+    - Giphy
+    - JitsiMeetSDK
+    - JitsiWebRTC
+    - libwebp
+
+EXTERNAL SOURCES:
+  app_links:
+    :path: ".symlinks/plugins/app_links/ios"
+  Flutter:
+    :path: Flutter
+  jitsi_meet_flutter_sdk:
+    :path: ".symlinks/plugins/jitsi_meet_flutter_sdk/ios"
+  path_provider_foundation:
+    :path: ".symlinks/plugins/path_provider_foundation/darwin"
+  shared_preferences_foundation:
+    :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
+  url_launcher_ios:
+    :path: ".symlinks/plugins/url_launcher_ios/ios"
+
+SPEC CHECKSUMS:
+  app_links: 76b66b60cc809390ca1ad69bfd66b998d2387ac7
+  Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
+  Giphy: 83628960ed04e1c3428ff1b4fb2b027f65e82f50
+  jitsi_meet_flutter_sdk: b0a19056a202d0832d6be51a3ef160ad8cbd74ed
+  JitsiMeetSDK: 439fc3e45870c5ebf7b371fa038719bf70ef76d9
+  JitsiWebRTC: b47805ab5668be38e7ee60e2258f49badfe8e1d0
+  libwebp: 02b23773aedb6ff1fd38cec7a77b81414c6842a8
+  path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
+  shared_preferences_foundation: 9e1978ff2562383bd5676f64ec4e9aa8fa06a6f7
+  url_launcher_ios: 694010445543906933d732453a59da0a173ae33d
+
+PODFILE CHECKSUM: aa138be8409ad2ab7f70f36aee65b237099b922e
+
+COCOAPODS: 1.16.2

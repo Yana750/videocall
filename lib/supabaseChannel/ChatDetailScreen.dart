@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'ChannelMeeting.dart';
 import 'ChatProvider.dart';
 
@@ -21,12 +22,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         title: Text(widget.channel.name),
         actions: [
           IconButton(
-            icon: const Icon(Icons.video_call, color: Colors.blueGrey, size: 24,),
+            icon: const Icon(Icons.video_call, color: Colors.blueGrey, size: 24),
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const JitsiMeetPage(),
+                  builder: (context) => JitsiMeetPage(roomName: '',),
                 ),
               );
             },
@@ -36,10 +37,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
-              itemCount: widget.channel.messages.length,
-              itemBuilder: (context, index) {
-                return ListTile(title: Text(widget.channel.messages[index]));
+            child: Consumer<ChatProvider>(
+              builder: (context, chatProvider, child) {
+                final channel = chatProvider.channels.firstWhere((c) => c.name == widget.channel.name);
+                return ListView.builder(
+                  itemCount: channel.messages.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(title: Text(channel.messages[index]));
+                  },
+                );
               },
             ),
           ),
@@ -57,10 +63,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   icon: const Icon(Icons.send),
                   onPressed: () {
                     if (_messageController.text.isNotEmpty) {
-                      setState(() {
-                        widget.channel.messages.add(_messageController.text);
-                        _messageController.clear();
-                      });
+                      final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+                      chatProvider.addMessageToChannel(widget.channel.name as int, _messageController.text);
+                      _messageController.clear();
                     }
                   },
                 ),
