@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:videocall/auth/register.dart';
-import 'package:videocall/mainscreen.dart';
-import '../supabase_config.dart';
+
+import '../Screen/mainScreen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,60 +12,98 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
 
-  Future<void> signIn() async {
+  Future<void> _login() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
-      final authResponse = await SupabaseConfig.client.auth.signInWithPassword(
-        email: emailController.text,
-        password: passwordController.text,
+      final response = await Supabase.instance.client.auth.signInWithPassword(
+        email: _emailController.text,
+        password: _passwordController.text,
       );
 
-      if (authResponse.session != null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => ScreenMain()),
-        );
+      // Проверка на ошибку после вызова метода
+      if (response.user == null) {
+        throw Exception('Invalid login credentials');
       }
-    } catch (error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка входа: $error')),
+
+      // Логин успешен, можно перейти к следующему экрану
+      print("User logged in: ${response.user?.email}");
+
+      // После успешной регистрации направляем на основной экран
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => MainScreen()), // Здесь MainScreen - ваш основной экран
       );
+      // Redirect to home page or wherever you want after successful login
+    } catch (e) {
+      print('Error during login: $e');
+      // Покажем ошибку пользователю
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Error'),
+            content: Text(e.toString()),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Авторизация')),
+      appBar: AppBar(title: Text('Login')),
       body: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             TextField(
-              controller: emailController,
+              controller: _emailController,
               decoration: InputDecoration(labelText: 'Email'),
+              keyboardType: TextInputType.emailAddress,
             ),
             TextField(
-              controller: passwordController,
-              decoration: InputDecoration(labelText: 'Пароль'),
+              controller: _passwordController,
+              decoration: InputDecoration(labelText: 'Password'),
               obscureText: true,
             ),
             SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: signIn,
-              child: Text('Войти'),
+            _isLoading
+                ? CircularProgressIndicator()
+                : ElevatedButton(
+              onPressed: _login,
+              child: Text('Login'),
             ),
             SizedBox(height: 20),
-            TextButton(onPressed: () {
-              Navigator.pushReplacement(
+            Text("Don\'t have an account?"),
+            TextButton(
+              onPressed: () {
+                Navigator.push(
                   context,
-                  MaterialPageRoute(
-                      builder: (context) => RegisterScreen())
-              );
-            },
-                child: const Text("Регистрация"))
+                  MaterialPageRoute(builder: (context) => SignUpScreen()),
+                );
+              },
+              child: Text('Sign Up'),
+            ),
           ],
         ),
       ),

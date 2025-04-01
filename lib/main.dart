@@ -1,32 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:videocall/auth/register.dart';
-import 'package:videocall/supabaseChannel/ChatProvider.dart';
-import 'package:videocall/supabase_config.dart';
-
-import 'mainscreen.dart';
+import '../auth/login.dart';
+import '../supabase_config.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  WidgetsFlutterBinding.ensureInitialized();
   await SupabaseConfig.initialize();
-
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => ChatProvider()),
-      ],
-      child: MyApp(),
-    ),
-  );
+  runApp(MyApp());
 }
-
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Регистрация/авторизация',
-      // home: RegisterScreen(),
-      home: ScreenMain(),
+      debugShowCheckedModeBanner: false,
+      home: LoginScreen(),
     );
   }
 }

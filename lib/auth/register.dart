@@ -1,88 +1,104 @@
 import 'package:flutter/material.dart';
-import 'package:videocall/auth/login.dart';
-import 'package:videocall/mainscreen.dart';
-import '../supabase_config.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../Screen/mainScreen.dart';
 
-class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+class SignUpScreen extends StatefulWidget {
+  const SignUpScreen({super.key});
 
   @override
-  _RegisterScreenState createState() => _RegisterScreenState();
+  _SignUpScreenState createState() => _SignUpScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
+class _SignUpScreenState extends State<SignUpScreen> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
 
-  Future<void> signUp() async {
+  Future<void> _signUp() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
-      final authResponse = await SupabaseConfig.client.auth.signUp(
-        email: emailController.text,
-        password: passwordController.text,
+      // Попытка регистрации пользователя
+      final response = await Supabase.instance.client.auth.signUp(
+        email: _emailController.text,
+        password: _passwordController.text,
       );
 
-      final user = authResponse.user;
-
-      if (user != null) {
-        print("✅ Пользователь зарегистрирован: ${user.id}");
-
-        // Добавляем пользователя в таблицу profiles
-        await SupabaseConfig.client.from('profiles').insert({
-          'id': user.id, // UUID пользователя
-          'username': emailController.text,
-          'created_at': DateTime.now().toIso8601String(),
-        });
-
-        // Переход на главный экран после успешной регистрации
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => ScreenMain()),
-        );
-      } else {
-        print("❌ Ошибка регистрации: authResponse.user == null");
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Ошибка регистрации: пользователь не создан')),
-        );
+      // Если user == null, значит произошла ошибка
+      if (response.user == null) {
+        throw Exception('Invalid credentials or user already exists.');
       }
-    } catch (error) {
-      print("❌ Ошибка регистрации: $error");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка регистрации: $error')),
+
+      // Выводим успешную регистрацию
+      print("User signed up: ${response.user?.email}");
+
+      // После успешной регистрации направляем на основной экран
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => MainScreen()), // Здесь MainScreen - ваш основной экран
       );
+
+    } catch (e) {
+      print('Error during sign up: $e');
+      // Покажем ошибку пользователю
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Error'),
+            content: Text(e.toString()),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Регистрация')),
+      appBar: AppBar(title: Text('Sign Up')),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             TextField(
-              controller: emailController,
-              decoration: const InputDecoration(labelText: 'Email'),
+              controller: _emailController,
+              decoration: InputDecoration(labelText: 'Email'),
+              keyboardType: TextInputType.emailAddress,
             ),
             TextField(
-              controller: passwordController,
-              decoration: const InputDecoration(labelText: 'Пароль'),
+              controller: _passwordController,
+              decoration: InputDecoration(labelText: 'Password'),
               obscureText: true,
             ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: signUp,
-              child: const Text('Зарегистрироваться'),
+            SizedBox(height: 20),
+            _isLoading
+                ? CircularProgressIndicator()
+                : ElevatedButton(
+              onPressed: _signUp,
+              child: Text('Sign Up'),
             ),
-            const SizedBox(height: 20,),
-            TextButton(onPressed: () {
-              Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => LoginScreen())
-              );
-            },
-                child: const Text("Авторизация"))
+            SizedBox(height: 20),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Go back to login screen
+              },
+              child: Text('Already have an account? Log In'),
+            ),
           ],
         ),
       ),
