@@ -77,13 +77,24 @@ class SupabaseService {
   Future<String?> createChannel(String name) async {
     final userId = _supabase.auth.currentUser?.id;
     if (userId == null) return null;
-    
-    final response = await _supabase.from('channels').insert({'name': name}).select('id').maybeSingle();
-    final channelid = response?['id'];  // Теперь метод возвращает ID нового канала
-    
-    if (channelid != null) {
-      await _supabase.from('channel_member').insert({'channel_id': channelid, 'user_id': userId});
+
+    final response = await _supabase.from('channels').insert({
+      'name': name,
+      'created_by': userId, // Добавляем ID создателя
+    }).select('id').maybeSingle();
+
+    final channelId = response?['id'];
+
+    if (channelId != null) {
+      // Добавляем создателя в канал
+      await _supabase.from('channel_member').insert({
+        'channel_id': channelId,
+        'user_id': userId,
+      });
+
+      return channelId; // Возвращаем ID созданного канала
     }
+
     return null;
   }
 

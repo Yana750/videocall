@@ -11,6 +11,20 @@ class ChannelsScreen extends StatefulWidget {
 
 class _ChannelsScreenState extends State<ChannelsScreen> {
   final TextEditingController _channelNameController = TextEditingController();
+  late Future<List<Map<String, dynamic>>> _channelsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadChannels();
+  }
+
+  void _loadChannels() {
+    setState(() {
+      _channelsFuture = supabaseService.getChannels().then((data) => data.cast<Map<String, dynamic>>());
+    });
+  }
+
 
   void _showCreateChannelDialog() {
     showDialog(
@@ -34,7 +48,8 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                 if (_channelNameController.text.isNotEmpty) {
                   await supabaseService.createChannel(_channelNameController.text);
                   _channelNameController.clear();
-                  Navigator.pop(context); // Закрываем диалог после создания
+                  Navigator.pop(context); // Закрываем диалог
+                  _loadChannels(); // Перезагружаем список каналов
                 }
               },
               child: const Text("Создать"),
@@ -50,7 +65,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text("Каналы")),
       body: FutureBuilder(
-        future: supabaseService.getChannels(),
+        future: _channelsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -63,6 +78,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
           }
 
           final channels = snapshot.data!;
+
           return ListView.builder(
             itemCount: channels.length,
             itemBuilder: (context, index) {
