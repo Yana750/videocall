@@ -98,6 +98,7 @@ class SupabaseService {
     return null;
   }
 
+
   //Новый метод для получения email текущего пользователя
   Future<String?> getUserEmail() async {
     final user = _supabase.auth.currentUser;
