@@ -16,7 +16,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
     if (_channelNameController.text.isNotEmpty) {
       await supabaseService.createChannel(_channelNameController.text);
       _channelNameController.clear();
-      setState(() {}); // Перезагружаем экран, чтобы отобразить новые каналы
+      setState(() {}); // Перезагрузка экрана, чтобы отобразить новые каналы
     }
   }
 
@@ -54,7 +54,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
               },
             ),
           ),
-          // ✅ Кнопка создания нового канала
+          // Кнопка создания нового канала
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Row(

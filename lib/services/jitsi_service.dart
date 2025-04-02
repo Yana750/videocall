@@ -1,57 +1,44 @@
+import 'dart:math';
+
 import 'package:jitsi_meet_flutter_sdk/jitsi_meet_flutter_sdk.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class JitsiService {
   final JitsiMeet jitsiMeet = JitsiMeet();
+  final supabase = Supabase.instance.client;
 
-  Future<void> joinMeeting() async {
-    try {
-      // Настройки для видеозвонка
-      var options = JitsiMeetConferenceOptions(
-              serverURL: "http://jitsi-connectrm.ru:8443/",
-              room: "testroom",
-              configOverrides: {
-                "startWithAudioMuted": false,
-                "starWithVideoMuted": false,
-                "subject": "JitsiMeet",
-              },
-              featureFlags: {
-                "unsaferoomwarning.enabled": false,
-              },
-            );
+  // Получение ссылки на встречу из базы
+  Future<String?> getMeetingUrl(String channelId) async {
+    final response = await supabase
+        .from('channels')
+        .select('meeting_url')
+        .eq('id', channelId)
+        .maybeSingle();
 
-      // Подключаемся к видеозвонку
-      await jitsiMeet.join(options);
-        } catch (error) {
-          print("Ошибка подключения: $error");
-        }
+    return response?['meeting_url'];
   }
 
-  // Future<void> joinMeeting(String roomName, {String? userName, String? userEmail}) async {
-  //   try {
-  //     var options = JitsiMeetConferenceOptions(
-  //       serverURL: "http://jitsi-connectrm.ru:8443/",
-  //       room: roomName,
-  //       userInfo: JitsiMeetUserInfo(
-  //         displayName: userName ?? "Guest",
-  //         email: userEmail,
-  //       ),
-  //       configOverrides: {
-  //         "startWithAudioMuted": false,
-  //         "starWithVideoMuted": false,
-  //         "subject": "JitsiMeet",
-  //       },
-  //       featureFlags: {
-  //         "unsaferoomwarning.enabled": false,
-  //       },
-  //     );
-  //
-  //     await jitsiMeet.join(options);
-  //   } catch (error) {
-  //     print("Ошибка подключения: $error");
-  //   }
-  // }
+  //Создание новой видеовстречи (если её нет)
+  Future<String> createMeeting(String channelId) async {
+    final existingUrl = await getMeetingUrl(channelId);
+    if (existingUrl != null) return existingUrl;
 
+    String randomMeetingId = _generateRandomMeetingId();
+    String meetingUrl = "https://jitsi-connectrm.ru:8443/$randomMeetingId";
 
+    await supabase.from('channels').update({'meeting_url': meetingUrl}).eq('id', channelId);
+    return meetingUrl;
+  }
+
+  // Генерация случайного ID встречи
+  String _generateRandomMeetingId() {
+    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    return List.generate(8, (index) => chars[Random().nextInt(chars.length)]).join();
+  }
+  // Saving meeting_url in database
+  Future<void> saveMeetingUrl(String channelId, String meetingUrl) async {
+    await supabase.from('channels').update({'meeting_url': meetingUrl}).eq('id', channelId);
+  }
 }
 
 final jitsiService = JitsiService();

@@ -3,6 +3,7 @@ import '../messages/chat_bubble.dart';
 import '../messages/message.dart';
 import '../services/jitsi_service.dart';
 import '../services/supabase_service.dart';
+import 'VideoCallScreen.dart';
 
 
 class ChannelChatScreen extends StatefulWidget {
@@ -24,26 +25,19 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
         title: const Text("Чат канала"),
         actions: [
           IconButton(
+            icon: Icon(Icons.video_call, color: Colors.blueGrey, size: 30),
             onPressed: () async {
-              final String? userId = supabaseService.currenUserId; // Получаем ID пользователя
-              final String? userEmail = await supabaseService.getUserEmail(); // Получаем email пользователя
-
-              // Проверяем, авторизован ли пользователь
-              if (userId != null && userEmail != null) {
-                // Если авторизован, запускаем видеозвонок
-                JitsiService().joinMeeting(); // Используем публичный метод
-              } else {
-                // Если не авторизован, выводим ошибку
-                print("Ошибка: Пользователь не авторизован");
-              }
+              String meetingUrl = await jitsiService.createMeeting(widget.channelId);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => JoinMeetingScreen(meetingUrl: meetingUrl)),
+              );
             },
-            icon: Icon(Icons.video_camera_back_rounded),
           ),
         ],
       ),
       body: Column(
         children: [
-          // ✅ Подключаем ChatBubble вместо ListTile
           Expanded(
             child: StreamBuilder<List<dynamic>>(
               stream: supabaseService.getMessages(widget.channelId),

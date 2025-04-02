@@ -9,7 +9,7 @@ class SupabaseService {
   final JitsiMeet jitsiMeet = JitsiMeet();
   String? get currenUserId => _supabase.auth.currentUser?.id;
 
-  // ✅ Аутентификация
+  // Аутентификация
   Future<void> signIn(String email, String password) async {
     await _supabase.auth.signInWithPassword(email: email, password: password);
   }
@@ -41,35 +41,78 @@ class SupabaseService {
     return response as List<dynamic>;
   }
 
-  // Метод для создания канала
-  Future<void> createChannel(String channelName) async {
+  Stream<List<Map<String, dynamic>>> getChannelsStream() {
     final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) {
-      throw Exception('User not authenticated');
-    }
+    if (userId == null) return const Stream.empty();
 
-    final response = await _supabase.from('channels').insert([
-      {
-        'name': channelName,
-        'created_by': userId,
-      }
-    ]).select(); // select() вернет данные, если нужно.
+    return _supabase
+        .from('channel_member')
+        .stream(primaryKey: ['id']) // Следим за изменениями в channel_member
+        .eq('user_id', userId)
+        .asyncMap((members) async {
+      final channelIds = members.map((m) => m['channel_id'] as String).toList();
 
-    // Проверяем, есть ли ошибка в ответе
-    if (response == null || response.isEmpty) {
-      throw Exception('Error creating channel: No response or invalid response');
-    }
+      if (channelIds.isEmpty) return [];
 
-    print('Channel created successfully: $response');
+      final channels = await _supabase
+          .from('channels')
+          .select('*')
+          // .in('id', channelIds)
+          .order('created_at', ascending: false);
+
+      return channels.map((channel) => {
+        'id': channel['id'],
+        'name': channel['name'],
+        // 'member_count': _getChannelMemberCount(channel['id']),
+      }).toList();
+    });
   }
 
-  // ✅ Новый метод для получения email текущего пользователя
+// // Метод для получения количества участников в канале
+//   Future<int> _getChannelMemberCount(String channelId) async {
+//     final response = await _supabase
+//         .from('channel_member')
+//         .select('id', count: CountOption.exact)
+//         .eq('channel_id', channelId)
+//         .count();
+//     return response.count ?? 0;
+//   }
+
+// Получить список каналов, в которых состоит пользователь
+  Future<List<String>> _getUserChannels(String? userId) async {
+    if (userId == null) return [];
+
+    final response = await _supabase
+        .from('user_channels')
+        .select('channel_id')
+        .eq('user_id', userId);
+
+    return response.map<String>((row) => row['channel_id'].toString()).toList();
+  }
+
+  Future<void> joinChannel(String channelId) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
+
+    await _supabase.from('channel_members').insert({
+      'channel_id': channelId,
+      'user_id': user.id,
+    });
+  }
+
+  // Метод для создания канала
+  Future<String?> createChannel(String name) async {
+    final response = await _supabase.from('channels').insert({'name': name}).select('id').maybeSingle();
+    return response?['id'];  // Теперь метод возвращает ID нового канала
+  }
+
+  //Новый метод для получения email текущего пользователя
   Future<String?> getUserEmail() async {
     final user = _supabase.auth.currentUser;
     return user?.email;
   }
 
-  // ✅ Работа с сообщениями
+  // Работа с сообщениями
   Future<void> sendMessage(String channelId, String text) async {
     final userId = _supabase.auth.currentUser?.id;
 
@@ -94,7 +137,7 @@ class SupabaseService {
     }
   }
 
-  // ✅ Подписываемся на обновления в таблице messages
+  // Подписка на обновления в таблице messages
   Stream<List<dynamic>> getMessages(String channelId) {
     final controller = StreamController<List<dynamic>>();
 
@@ -109,7 +152,7 @@ class SupabaseService {
 
     fetchMessages(); // Загружаем текущие сообщения
 
-    // ✅ Подключаем канал к Supabase Realtime
+    // Подключение канал к Supabase Realtime
     final channel = _supabase.realtime.channel('messages_channel');
 
     channel
@@ -118,7 +161,7 @@ class SupabaseService {
       schema: 'public',
       table: 'messages',
       callback: (payload) {
-        fetchMessages(); // Загружаем новые сообщения при обновлении
+        fetchMessages(); // Загрузка новых сообщений при обновлении
       },
     )
         .subscribe();
