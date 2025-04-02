@@ -10,7 +10,7 @@ class ChatBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var chatContents = [
-      const SizedBox(width: 12.0),
+      const SizedBox(width: 5.0),
       Flexible(
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
@@ -24,10 +24,10 @@ class ChatBubble extends StatelessWidget {
           ),
         ),
       ),
-      const SizedBox(width: 12),
+      const SizedBox(width: 5),
       Text(message.createAt.toString(),
           style: const TextStyle(color: Colors.grey, fontSize: 12.0)),
-      const SizedBox(width: 60),
+      const SizedBox(width: 40),
     ];
 
     if (message.isMine) {
@@ -35,7 +35,7 @@ class ChatBubble extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 18),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
       child: Row(
         mainAxisAlignment:
         message.isMine ? MainAxisAlignment.end : MainAxisAlignment.start,

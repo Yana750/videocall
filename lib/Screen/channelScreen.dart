@@ -12,67 +12,78 @@ class ChannelsScreen extends StatefulWidget {
 class _ChannelsScreenState extends State<ChannelsScreen> {
   final TextEditingController _channelNameController = TextEditingController();
 
-  void _createChannel() async {
-    if (_channelNameController.text.isNotEmpty) {
-      await supabaseService.createChannel(_channelNameController.text);
-      _channelNameController.clear();
-      setState(() {}); // Перезагрузка экрана, чтобы отобразить новые каналы
-    }
+  void _showCreateChannelDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Создание нового канала"),
+          content: TextField(
+            controller: _channelNameController,
+            decoration: const InputDecoration(hintText: "Введите название канала"),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Закрываем диалог
+              },
+              child: const Text("Отмена"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (_channelNameController.text.isNotEmpty) {
+                  await supabaseService.createChannel(_channelNameController.text);
+                  _channelNameController.clear();
+                  Navigator.pop(context); // Закрываем диалог после создания
+                }
+              },
+              child: const Text("Создать"),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Каналы")),
-      body: Column(
-        children: [
-          Expanded(
-            child: FutureBuilder(
-              future: supabaseService.getChannels(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return Center(child: CircularProgressIndicator());
-                final channels = snapshot.data as List;
-                if (channels.isEmpty) {
-                  return Center(child: Text('У вас нет созданных каналов.'));
-                }
-                return ListView.builder(
-                  itemCount: channels.length,
-                  itemBuilder: (context, index) {
-                    return ListTile(
-                      title: Text(channels[index]['name']),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ChannelChatScreen(channelId: channels[index]['id']),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-          // Кнопка создания нового канала
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _channelNameController,
-                    decoration: InputDecoration(labelText: "Название канала"),
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.add),
-                  onPressed: _createChannel,
-                ),
-              ],
-            ),
-          ),
-        ],
+      appBar: AppBar(title: const Text("Каналы")),
+      body: FutureBuilder(
+        future: supabaseService.getChannels(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text("Ошибка загрузки: ${snapshot.error}"));
+          }
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text("Нет доступных каналов"));
+          }
+
+          final channels = snapshot.data!;
+          return ListView.builder(
+            itemCount: channels.length,
+            itemBuilder: (context, index) {
+              return ListTile(
+                title: Text(channels[index]['name']),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ChannelChatScreen(channelId: channels[index]['id']),
+                    ),
+                  );
+                },
+              );
+            },
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showCreateChannelDialog,
+        child: const Icon(Icons.add),
       ),
     );
   }

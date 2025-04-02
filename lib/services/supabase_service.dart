@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:jitsi_meet_flutter_sdk/jitsi_meet_flutter_sdk.dart';
 import 'package:uuid/uuid.dart';
@@ -35,59 +36,31 @@ class SupabaseService {
     final response = await _supabase
         .from('channels')
         .select()
-        .eq('created_by', userId); // Фильтруем каналы по ID текущего пользователя
+        .eq('created_by', userId);
 
     // Возвращаем данные из response.data (без проверки ошибок)
     return response as List<dynamic>;
   }
 
   Stream<List<Map<String, dynamic>>> getChannelsStream() {
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) return const Stream.empty();
-
     return _supabase
-        .from('channel_member')
-        .stream(primaryKey: ['id']) // Следим за изменениями в channel_member
-        .eq('user_id', userId)
-        .asyncMap((members) async {
-      final channelIds = members.map((m) => m['channel_id'] as String).toList();
-
-      if (channelIds.isEmpty) return [];
-
-      final channels = await _supabase
-          .from('channels')
-          .select('*')
-          // .in('id', channelIds)
-          .order('created_at', ascending: false);
-
-      return channels.map((channel) => {
-        'id': channel['id'],
-        'name': channel['name'],
-        // 'member_count': _getChannelMemberCount(channel['id']),
-      }).toList();
-    });
+        .from('channels')
+        .stream(primaryKey: ['id']) // Подписка на изменения в таблице
+        .order('created_at', ascending: false) // Новые каналы сверху
+        .map((data) => data.map((channel) => {
+      'id': channel['id'],
+      'name': channel['name'],
+      'member_count': channel['member_count'] ?? 0, // Безопасная обработка null
+    }).toList());
   }
 
-// // Метод для получения количества участников в канале
-//   Future<int> _getChannelMemberCount(String channelId) async {
-//     final response = await _supabase
-//         .from('channel_member')
-//         .select('id', count: CountOption.exact)
-//         .eq('channel_id', channelId)
-//         .count();
-//     return response.count ?? 0;
-//   }
-
-// Получить список каналов, в которых состоит пользователь
-  Future<List<String>> _getUserChannels(String? userId) async {
-    if (userId == null) return [];
-
+  Future<int> _getChannelMemberCount(String channelId) async {
     final response = await _supabase
-        .from('user_channels')
-        .select('channel_id')
-        .eq('user_id', userId);
+        .from('channel_member')
+        .select('id')
+        .eq('channel_id', channelId);
 
-    return response.map<String>((row) => row['channel_id'].toString()).toList();
+    return response.length; // Количество записей
   }
 
   Future<void> joinChannel(String channelId) async {
@@ -102,8 +75,16 @@ class SupabaseService {
 
   // Метод для создания канала
   Future<String?> createChannel(String name) async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) return null;
+    
     final response = await _supabase.from('channels').insert({'name': name}).select('id').maybeSingle();
-    return response?['id'];  // Теперь метод возвращает ID нового канала
+    final channelid = response?['id'];  // Теперь метод возвращает ID нового канала
+    
+    if (channelid != null) {
+      await _supabase.from('channel_member').insert({'channel_id': channelid, 'user_id': userId});
+    }
+    return null;
   }
 
   //Новый метод для получения email текущего пользователя
