@@ -35,7 +35,7 @@ class JitsiService {
     const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
     return List.generate(8, (index) => chars[Random().nextInt(chars.length)]).join();
   }
-  // Saving meeting_url in database
+  // Сохранение ссылки видеовстречи в базу данных
   Future<void> saveMeetingUrl(String channelId, String meetingUrl) async {
     await supabase.from('channels').update({'meeting_url': meetingUrl}).eq('id', channelId);
   }

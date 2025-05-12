@@ -45,9 +45,6 @@ class _JoinMeetingScreenState extends State<JoinMeetingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // appBar: AppBar(title: const Text("Видеозвонок")),
-      // body: Center(child: CircularProgressIndicator()), // Просто индикатор загрузки
-    );
+    return Scaffold();
   }
 }
